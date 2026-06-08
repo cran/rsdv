@@ -1,0 +1,60 @@
+---
+title: "Migrating from synthpop"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Migrating from synthpop}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+## Why switch?
+
+`synthpop` excels at disclosure-controlled individual-level microdata but
+lacks joint distribution modeling via copulas. `rsdv` uses a Gaussian copula
+to preserve inter-column correlations.
+
+## Side-by-side comparison
+
+### synthpop workflow
+
+```r
+library(synthpop)
+synth <- syn(adult_income[, c("age", "occupation", "income")])
+synthetic_data <- synth$syn
+```
+
+### rsdv workflow
+
+```{r, message=FALSE}
+library(rsdv)
+
+set.seed(42)
+
+meta  <- metadata(adult_income) |>
+  set_column_type("age",        "numerical") |>
+  set_column_type("occupation", "categorical") |>
+  set_column_type("income",     "categorical")
+
+syn   <- gaussian_copula_synthesizer(meta)
+syn   <- fit(syn, adult_income)
+synthetic_data <- sample(syn, n = nrow(adult_income))
+```
+
+## Key differences
+
+| Feature | synthpop | rsdv |
+|---|---|---|
+| Correlation modeling | CART-based sequential | Gaussian copula over all column types |
+| Column constraints | Limited | Equality, inequality, fixed combos, custom |
+| Conditional sampling | Via predictor order | `sample_conditions()` on categorical values |
+| Quality metrics | Built-in utility measures | KS, TVD, correlation & contingency similarity, ML efficacy |
+| Diagnostics | None | Validity report (ranges, categories, key uniqueness) |
+| Privacy metrics | None | NNDR, attribute disclosure risk |
+| Python interop | No | API-compatible with SDV |

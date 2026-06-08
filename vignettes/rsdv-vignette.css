@@ -1,0 +1,163 @@
+/* ============================================================
+   rsdv vignette — custom styles (layered over flatly / Bootstrap 5)
+   Brand accent: #2171b5
+   ============================================================ */
+
+/* --- Body & typography ------------------------------------ */
+body {
+  font-size: 15.5px;
+  line-height: 1.78;
+  color: #2d3748;
+}
+
+/* --- Section headers -------------------------------------- */
+h1.title {
+  color: #1a2e45;
+  font-weight: 700;
+  border-bottom: 3px solid #2171b5;
+  padding-bottom: 0.5rem;
+  margin-bottom: 0.3rem;
+}
+
+h2 {
+  margin-top: 2.4rem;
+  padding-bottom: 0.45rem;
+  border-bottom: 2px solid #dce6f0;
+  color: #1a2e45;
+  font-weight: 600;
+}
+
+h3 {
+  margin-top: 1.7rem;
+  color: #2171b5;
+  font-size: 1.08rem;
+  font-weight: 600;
+}
+
+h4 {
+  font-weight: 600;
+  color: #2d3748;
+}
+
+/* --- Code blocks ------------------------------------------ */
+pre {
+  border: 1px solid #ccd9e8;
+  border-left: 4px solid #2171b5;
+  border-radius: 5px;
+  background-color: #f6f9fc;
+  padding: 1em 1.3em;
+  font-size: 0.875em;
+  line-height: 1.6;
+}
+
+code {
+  background-color: #eef2f8;
+  border: 1px solid #ccd9e8;
+  border-radius: 3px;
+  padding: 0.13em 0.38em;
+  font-size: 0.875em;
+  color: #c0392b;
+}
+
+pre code {
+  background: none;
+  border: none;
+  padding: 0;
+  color: inherit;
+  font-size: inherit;
+}
+
+/* --- Tables ----------------------------------------------- */
+table {
+  font-size: 0.92em;
+  width: 100%;
+  margin: 1.3rem 0;
+  border-collapse: collapse;
+  box-shadow: 0 1px 4px rgba(33, 113, 181, 0.08);
+  border-radius: 5px;
+  overflow: hidden;
+}
+
+thead th {
+  background-color: #2171b5;
+  color: #ffffff;
+  padding: 10px 15px;
+  font-weight: 600;
+  border: none;
+  letter-spacing: 0.01em;
+}
+
+tbody td {
+  padding: 8px 15px;
+  border-bottom: 1px solid #e4eef6;
+  vertical-align: top;
+}
+
+tbody tr:last-child td {
+  border-bottom: none;
+}
+
+tbody tr:nth-child(even) td {
+  background-color: #f6f9fc;
+}
+
+/* --- Horizontal rules ------------------------------------- */
+hr {
+  border: none;
+  border-top: 1px solid #dce6f0;
+  margin: 2.6rem 0;
+}
+
+/* --- TOC sidebar ------------------------------------------ */
+#TOC {
+  background: #f8fafd;
+  border: 1px solid #dce6f0;
+  border-left: 3px solid #2171b5;
+  border-radius: 5px;
+  padding: 14px 18px;
+  font-size: 0.87em;
+  line-height: 1.6;
+}
+
+#TOC > ul {
+  padding-left: 0.4em;
+}
+
+#TOC ul {
+  padding-left: 1.1em;
+}
+
+#TOC a {
+  color: #4a6785;
+  text-decoration: none;
+}
+
+#TOC a:hover {
+  color: #2171b5;
+  text-decoration: none;
+}
+
+.tocify-subheader .tocify-item {
+  font-size: 0.95em;
+}
+
+/* --- Figures ---------------------------------------------- */
+img {
+  max-width: 100%;
+  border-radius: 4px;
+}
+
+/* --- Blockquotes ------------------------------------------ */
+blockquote {
+  border-left: 4px solid #2171b5;
+  background: #eef5fc;
+  padding: 0.65em 1.15em;
+  margin: 1.3em 0;
+  border-radius: 0 5px 5px 0;
+  color: #3a4a5a;
+}
+
+/* --- Strong / bold text in prose -------------------------- */
+p strong {
+  color: #1a2e45;
+}
