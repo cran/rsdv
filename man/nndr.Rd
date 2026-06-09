@@ -4,10 +4,14 @@
 \alias{nndr}
 \title{Nearest-Neighbor Distance Ratio privacy score}
 \usage{
-nndr(real, synthetic)
+nndr(real, synthetic, normalize = TRUE)
 }
 \arguments{
-\item{real, synthetic}{Data frames with only numerical columns.}
+\item{real, synthetic}{Data frames; only numerical columns are used.}
+
+\item{normalize}{Logical. When \code{TRUE} (default), columns are z-scored using
+the real-data mean and standard deviation before distance computation.
+Constant columns in \code{real} are dropped to avoid division by zero.}
 }
 \value{
 A scalar score in [0, 1]; higher = more private.
@@ -17,6 +21,12 @@ For each synthetic row, computes the ratio of its distance to the nearest
 real row vs. its distance to the second-nearest real row. A high ratio
 (close to 1) means the synthetic row is not unusually close to any
 specific real row — low disclosure risk. Score = mean(ratio > 0.5).
+}
+\details{
+By default columns are z-scored using the real-data mean and standard
+deviation before the Euclidean distance is computed; without this, a single
+large-scale column (e.g. income in dollars) dominates the distance and the
+score becomes a function of measurement units rather than of similarity.
 }
 \examples{
 real <- data.frame(x = rnorm(50), y = rnorm(50))

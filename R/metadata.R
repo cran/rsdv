@@ -43,6 +43,14 @@ detect_column_type <- function(x) {
 #' @param column Column name (character).
 #' @param type One of `"numerical"`, `"categorical"`, `"boolean"`,
 #'   `"datetime"`, `"id"`.
+#'
+#' For categorical columns the level *order* used by the synthesizer follows
+#' the input: a `factor` keeps its `levels()` order (including ordered
+#' factors), while a plain character column gets a sorted unique-value order
+#' for determinism. The sort is **lexicographic**, so numeric-like character
+#' columns (`c("2", "10")`) come back ordered `"10", "2"`. Coerce these to
+#' `factor` with the desired level order before fitting if order matters.
+#'
 #' @return The updated `rsdv_metadata` object (for piping).
 #' @examples
 #' metadata() |> set_column_type("age", "numerical")
@@ -76,6 +84,12 @@ set_primary_key <- function(meta, column) {
       column
     ))
   }
+  col_type <- meta$columns[[column]]$type
+  if (!identical(col_type, "id"))
+    warning(sprintf(
+      "Primary key column '%s' has type '%s', not 'id'. Synthesis will model it as %s data, which usually produces non-unique values -- set its type to 'id' if you want it excluded from synthesis.",
+      column, col_type, col_type
+    ), call. = FALSE)
   meta$primary_key <- column
   meta
 }

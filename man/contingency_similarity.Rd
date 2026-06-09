@@ -15,8 +15,10 @@ contingency_similarity(real, synthetic, meta)
 }
 \value{
 A list with \code{pairs} (a tibble of \code{column_1}, \code{column_2}, \code{score}) and
-\code{score} (the mean over pairs; \code{1} when there are fewer than two categorical
-columns).
+\code{score} (the mean over pairs). \code{score} is \code{NA_real_} when there are fewer
+than two categorical columns — there is no dependence to measure, so
+propagating \code{NA} (rather than \code{1}) avoids overstating fidelity in the
+aggregated quality report.
 }
 \description{
 For each pair of categorical columns, compares the joint (normalized

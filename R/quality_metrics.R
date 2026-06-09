@@ -42,10 +42,21 @@ ks_similarity <- function(real, synthetic, meta) {
 tvd_similarity <- function(real, synthetic, meta) {
   cat_cols <- get_columns_by_type(meta, "categorical")
   rows <- lapply(cat_cols, function(col) {
-    all_levels <- union(unique(real[[col]]), unique(synthetic[[col]]))
-    p_real <- table(factor(real[[col]],      levels = all_levels)) / nrow(real)
-    p_syn  <- table(factor(synthetic[[col]], levels = all_levels)) / nrow(synthetic)
-    tvd    <- 0.5 * sum(abs(as.numeric(p_real) - as.numeric(p_syn)))
+    # Drop NAs and divide by the non-NA count on each side. Including NAs in
+    # the denominator (the old behaviour) inflated TVD whenever either side
+    # had NAs, because the empirical probabilities then summed to less than 1.
+    real_vals <- real[[col]][!is.na(real[[col]])]
+    syn_vals  <- synthetic[[col]][!is.na(synthetic[[col]])]
+    if (length(real_vals) == 0L || length(syn_vals) == 0L) {
+      # No usable data on at least one side — nothing to compare.
+      return(list(column = col, score = NA_real_))
+    }
+    all_levels <- union(unique(real_vals), unique(syn_vals))
+    p_real <- tabulate(match(real_vals, all_levels),
+                       nbins = length(all_levels)) / length(real_vals)
+    p_syn  <- tabulate(match(syn_vals,  all_levels),
+                       nbins = length(all_levels)) / length(syn_vals)
+    tvd    <- 0.5 * sum(abs(p_real - p_syn))
     list(column = col, score = 1 - tvd)
   })
   tibble::tibble(
@@ -64,8 +75,10 @@ tvd_similarity <- function(real, synthetic, meta) {
 #' @param synthetic A data frame of synthetic data.
 #' @param meta An `rsdv_metadata` object.
 #' @return A list with `pairs` (a tibble of `column_1`, `column_2`, `score`) and
-#'   `score` (the mean over pairs; `1` when there are fewer than two numerical
-#'   columns).
+#'   `score` (the mean over pairs). `score` is `NA_real_` when there are fewer
+#'   than two numerical columns — there is no dependence to measure, so
+#'   propagating `NA` (rather than `1`) avoids overstating fidelity in the
+#'   aggregated quality report.
 #' @export
 #' @examples
 #' \donttest{
@@ -77,7 +90,7 @@ correlation_similarity <- function(real, synthetic, meta) {
   num_cols <- get_columns_by_type(meta, "numerical")
   empty    <- tibble::tibble(column_1 = character(), column_2 = character(),
                              score = double())
-  if (length(num_cols) < 2L) return(list(pairs = empty, score = 1))
+  if (length(num_cols) < 2L) return(list(pairs = empty, score = NA_real_))
 
   cor_real <- stats::cor(real[, num_cols, drop = FALSE],
                          use = "pairwise.complete.obs")
@@ -111,8 +124,10 @@ correlation_similarity <- function(real, synthetic, meta) {
 #' @param synthetic A data frame of synthetic data.
 #' @param meta An `rsdv_metadata` object.
 #' @return A list with `pairs` (a tibble of `column_1`, `column_2`, `score`) and
-#'   `score` (the mean over pairs; `1` when there are fewer than two categorical
-#'   columns).
+#'   `score` (the mean over pairs). `score` is `NA_real_` when there are fewer
+#'   than two categorical columns — there is no dependence to measure, so
+#'   propagating `NA` (rather than `1`) avoids overstating fidelity in the
+#'   aggregated quality report.
 #' @export
 #' @examples
 #' \donttest{
@@ -125,7 +140,7 @@ contingency_similarity <- function(real, synthetic, meta) {
   cat_cols <- get_columns_by_type(meta, "categorical")
   empty    <- tibble::tibble(column_1 = character(), column_2 = character(),
                              score = double())
-  if (length(cat_cols) < 2L) return(list(pairs = empty, score = 1))
+  if (length(cat_cols) < 2L) return(list(pairs = empty, score = NA_real_))
 
   combos <- utils::combn(cat_cols, 2L)
   rows   <- lapply(seq_len(ncol(combos)), function(j) {
@@ -158,7 +173,10 @@ contingency_similarity <- function(real, synthetic, meta) {
 #' @param synthetic A data frame of synthetic data.
 #' @param meta An `rsdv_metadata` object.
 #' @param target_col Name of a categorical column to use as the outcome.
-#' @param test_fraction Fraction of `real` to hold out as the test set.
+#' @param test_fraction Fraction of `real` to hold out as the test set. Must be
+#'   strictly between 0 and 1.
+#' @param seed Optional integer seed. When supplied, the train/test split is
+#'   reproducible across calls without affecting the caller's RNG stream.
 #' @return A list with elements `tstr` (accuracy), `trtr` (accuracy), and
 #'   `score` (ratio, capped at 1).
 #' @export
@@ -167,12 +185,32 @@ contingency_similarity <- function(real, synthetic, meta) {
 #' meta      <- metadata(adult_income)
 #' syn       <- gaussian_copula_synthesizer(meta) |> fit(adult_income)
 #' synth_data <- sample(syn, n = 500)
-#' ml_efficacy(adult_income, synth_data, meta, target_col = "income")
+#' ml_efficacy(adult_income, synth_data, meta, target_col = "income", seed = 1)
 #' }
 ml_efficacy <- function(real, synthetic, meta, target_col,
-                        test_fraction = 0.2) {
-  n        <- nrow(real)
-  test_idx <- sample.int(n, size = floor(n * test_fraction))
+                        test_fraction = 0.2, seed = NULL) {
+  if (!target_col %in% names(real))
+    stop(sprintf("target_col '%s' not found in `real`.", target_col))
+  if (!is.numeric(test_fraction) || length(test_fraction) != 1L ||
+      !is.finite(test_fraction) || test_fraction <= 0 || test_fraction >= 1)
+    stop("`test_fraction` must be a single number strictly between 0 and 1.")
+
+  n <- nrow(real)
+  # Reproducible split when seed is given; otherwise use the global RNG so
+  # behaviour is unchanged for callers who rely on set.seed() outside.
+  test_idx <- if (is.null(seed)) {
+    sample.int(n, size = floor(n * test_fraction))
+  } else {
+    old <- if (exists(".Random.seed", envir = .GlobalEnv))
+      get(".Random.seed", envir = .GlobalEnv) else NULL
+    on.exit(
+      if (is.null(old)) rm(".Random.seed", envir = .GlobalEnv) else
+        assign(".Random.seed", old, envir = .GlobalEnv),
+      add = TRUE
+    )
+    set.seed(seed)
+    sample.int(n, size = floor(n * test_fraction))
+  }
   train_real <- real[-test_idx, , drop = FALSE]
   test_real  <- real[ test_idx, , drop = FALSE]
 
@@ -196,15 +234,26 @@ ml_efficacy <- function(real, synthetic, meta, target_col,
   list(tstr = tstr, trtr = trtr, score = score)
 }
 
-# Convert character columns in df to factors whose levels are the union of the
-# values present in df and those present in reference. This expands the level
-# set so models fitted on df recognise every value that appears in reference.
+# For each character or factor column in df, expand the level set to the
+# union of all values present in df *or* reference. Models fitted on df then
+# recognise every value that may appear in reference at predict() time,
+# preventing rpart's "factor has new levels" error.
+#
+# Previously only character columns were expanded; factor columns silently
+# kept their original levels and broke predict() whenever reference had a
+# level the synthesizer hadn't drawn.
 .set_levels <- function(df, reference) {
   for (col in names(df)) {
-    if (!is.character(df[[col]])) next
+    is_char <- is.character(df[[col]])
+    is_fac  <- is.factor(df[[col]])
+    if (!is_char && !is_fac) next
     if (!col %in% names(reference)) next
-    lvls <- sort(union(unique(as.character(df[[col]])),
-                       unique(as.character(reference[[col]]))))
+
+    df_vals  <- if (is_fac) c(as.character(df[[col]]), levels(df[[col]]))
+                else        as.character(df[[col]])
+    ref_vals <- as.character(reference[[col]])
+    lvls     <- sort(unique(c(df_vals[!is.na(df_vals)],
+                              ref_vals[!is.na(ref_vals)])))
     df[[col]] <- factor(df[[col]], levels = lvls)
   }
   df

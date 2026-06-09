@@ -12,7 +12,14 @@ set_column_type(meta, column, type)
 \item{column}{Column name (character).}
 
 \item{type}{One of \code{"numerical"}, \code{"categorical"}, \code{"boolean"},
-\code{"datetime"}, \code{"id"}.}
+\code{"datetime"}, \code{"id"}.
+
+For categorical columns the level \emph{order} used by the synthesizer follows
+the input: a \code{factor} keeps its \code{levels()} order (including ordered
+factors), while a plain character column gets a sorted unique-value order
+for determinism. The sort is \strong{lexicographic}, so numeric-like character
+columns (\code{c("2", "10")}) come back ordered \verb{"10", "2"}. Coerce these to
+\code{factor} with the desired level order before fitting if order matters.}
 }
 \value{
 The updated \code{rsdv_metadata} object (for piping).

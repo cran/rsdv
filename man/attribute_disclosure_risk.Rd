@@ -11,7 +11,8 @@ attribute_disclosure_risk(real, synthetic, sensitive_col, known_cols, k = 1L)
 
 \item{sensitive_col}{Name of the column to protect.}
 
-\item{known_cols}{Character vector of columns assumed known to an adversary.}
+\item{known_cols}{Character vector of \strong{numeric} columns assumed known to
+an adversary. Categorical columns are rejected with a clear error.}
 
 \item{k}{Number of nearest neighbors used in inference.}
 }
@@ -22,6 +23,12 @@ A scalar in [0, 1]; lower = more private.
 Estimates the fraction of synthetic rows where a sensitive column value
 can be correctly inferred from known columns via a k-NN lookup in the
 real training data.
+}
+\details{
+\code{known_cols} must be numeric, because nearest-neighbour lookup operates on
+Euclidean distance over the columns. If you want to use a categorical
+column as a known attribute, one-hot encode it first (e.g. with
+\code{model.matrix(~ col - 1, data)}).
 }
 \examples{
 real <- data.frame(age = sample(20:60, 50, replace = TRUE),

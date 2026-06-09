@@ -35,6 +35,23 @@ gaussian_copula_synthesizer <- function(metadata, enforce_min_max = TRUE,
                  paste(sprintf("'%s'", bad), collapse = ", "),
                  paste(valid, collapse = ", ")))
 
+  # Cross-check numerical_distributions names against metadata so that a typo
+  # like `list(capitl_gain = "gamma")` is reported instead of being silently
+  # ignored (the typo'd entry just defaults to default_distribution).
+  if (length(numerical_distributions) > 0L) {
+    nd_names <- names(numerical_distributions)
+    if (is.null(nd_names) || any(!nzchar(nd_names)))
+      stop("`numerical_distributions` must be a fully-named list/vector.")
+    num_cols <- get_columns_by_type(metadata, "numerical")
+    unknown  <- setdiff(nd_names, num_cols)
+    if (length(unknown) > 0L)
+      stop(sprintf(
+        "`numerical_distributions` names %s are not numerical columns in the metadata. Numerical columns: %s.",
+        paste(sprintf("'%s'", unknown), collapse = ", "),
+        if (length(num_cols)) paste(sprintf("'%s'", num_cols), collapse = ", ") else "(none)"
+      ))
+  }
+
   structure(
     list(
       metadata                = metadata,
@@ -64,6 +81,19 @@ fit.gaussian_copula_synthesizer <- function(object, data, ...) {
   cat_cols  <- get_columns_by_type(meta, "categorical")
   bool_cols <- get_columns_by_type(meta, "boolean")
 
+  # Reject any modeled column that has no non-NA values up front, with a clear
+  # message; otherwise the downstream marginal fitters raise cryptic warnings
+  # about "no non-missing arguments to min" before copula fitting errors out.
+  candidates  <- c(num_cols, cat_cols, bool_cols)
+  empty_cols  <- candidates[vapply(candidates,
+                                   function(col) all(is.na(data[[col]])),
+                                   logical(1L))]
+  if (length(empty_cols) > 0L)
+    stop(sprintf(
+      "Cannot fit: column(s) %s are entirely NA. Drop them, mark them as 'id', or impute before fitting.",
+      paste(sprintf("'%s'", empty_cols), collapse = ", ")
+    ))
+
   object$num_cols  <- num_cols
   object$cat_cols  <- cat_cols
   object$bool_cols <- bool_cols
@@ -88,6 +118,11 @@ fit.gaussian_copula_synthesizer <- function(object, data, ...) {
   if (length(modeled_cols) >= 2L) {
     # Fit on rows that are complete across all modeled columns.
     complete <- stats::complete.cases(data[, modeled_cols, drop = FALSE])
+    if (sum(complete) < 2L)
+      stop(sprintf(
+        "Cannot fit the copula: only %d complete case(s) across the modeled column(s) (%s). At least 2 are required. Check for columns that are entirely or almost entirely NA.",
+        sum(complete), paste(sprintf("'%s'", modeled_cols), collapse = ", ")
+      ))
     u_mat <- do.call(cbind, lapply(modeled_cols, function(col) {
       tr <- object$transformers[[col]]
       switch(tr$type,
@@ -185,6 +220,10 @@ sample_conditions <- function(x, conditions, max_tries = 100L) {
     stop("`conditions` must be a data frame with at least one row.")
 
   counts    <- if (".n" %in% names(conditions)) conditions[[".n"]] else rep(1L, nrow(conditions))
+  if (!is.numeric(counts) || any(!is.finite(counts)) ||
+      any(counts != as.integer(counts)) || any(counts < 1L))
+    stop("`.n` must be a vector of positive whole numbers (one per condition row).")
+  counts    <- as.integer(counts)
   cond_cols <- setdiff(names(conditions), ".n")
 
   # Only categorical/boolean equality conditions can be matched exactly.
@@ -199,6 +238,7 @@ sample_conditions <- function(x, conditions, max_tries = 100L) {
     stop(sprintf("Unknown condition column(s): %s",
                  paste(sprintf("'%s'", unknown), collapse = ", ")))
 
+  meta <- x$metadata
   out_parts <- vector("list", nrow(conditions))
   for (i in seq_len(nrow(conditions))) {
     need      <- as.integer(counts[i])
@@ -213,7 +253,9 @@ sample_conditions <- function(x, conditions, max_tries = 100L) {
       match <- rep(TRUE, nrow(batch))
       for (col in cond_cols)
         match <- match & as.character(batch[[col]]) == as.character(target[[col]])
-      good <- batch[match, , drop = FALSE]
+      # Honour metadata constraints, matching sample.gaussian_copula_synthesizer.
+      valid <- check_constraints(batch, meta)
+      good  <- batch[match & valid, , drop = FALSE]
       if (nrow(good) > 0L) {
         collected[[tries]] <- good
         remaining <- remaining - nrow(good)

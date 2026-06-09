@@ -33,10 +33,10 @@ generics::fit
 sample <- function(x, n = NULL, ...) {
   if (inherits(x, "rsdv_synthesizer")) {
     UseMethod("sample")
+  } else if (is.null(n)) {
+    base::sample(x, ...)
   } else {
-    args <- list(x = x, ...)
-    if (!is.null(n)) args[["size"]] <- n
-    do.call(base::sample, args)
+    base::sample(x, size = n, ...)
   }
 }
 

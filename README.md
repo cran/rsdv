@@ -35,6 +35,7 @@ set.seed(42)
 
 # Describe column types
 meta <- metadata(adult_income) |>
+  set_column_type("id",         "id") |>
   set_column_type("age",        "numerical") |>
   set_column_type("occupation", "categorical") |>
   set_column_type("income",     "categorical") |>
@@ -54,31 +55,30 @@ print(qr)
 #> == rsdv Quality Report ==
 #> 
 #> Column Similarity (KS, numerical):
-#>   id                   0.958
-#>   age                  0.948
-#>   fnlwgt               0.950
-#>   education_num        0.780
+#>   age                  0.960
+#>   fnlwgt               0.936
+#>   education_num        0.776
 #>   capital_gain         0.468
-#>   capital_loss         0.470
-#>   hours_per_week       0.738
+#>   capital_loss         0.484
+#>   hours_per_week       0.724
 #> 
 #> Column Similarity (TVD, categorical):
-#>   workclass            0.961
-#>   education            0.944
-#>   marital_status       0.952
-#>   occupation           0.951
-#>   relationship         0.978
-#>   race                 0.990
-#>   sex                  0.992
-#>   native_country       0.976
-#>   income               0.980
+#>   workclass            0.973
+#>   education            0.942
+#>   marital_status       0.988
+#>   occupation           0.935
+#>   relationship         0.970
+#>   race                 0.988
+#>   sex                  1.000
+#>   native_country       0.956
+#>   income               0.972
 #> 
 #> Property scores:
-#>   Column Shapes        0.877
-#>   Column Pair Trends   0.903
-#>     (correlation 0.967, contingency 0.865)
+#>   Column Shapes        0.871
+#>   Column Pair Trends   0.893
+#>     (correlation 0.965, contingency 0.864)
 #> 
-#> Overall Score:               0.890
+#> Overall Score:               0.882
 ```
 
 `quality_report()` aggregates metrics into the two-property hierarchy

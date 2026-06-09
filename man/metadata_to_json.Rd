@@ -10,13 +10,18 @@ metadata_to_json(meta)
 \item{meta}{An \code{rsdv_metadata} object.}
 }
 \value{
-A JSON character string.
+A JSON character string. Inverse of \code{\link[=metadata_from_json]{metadata_from_json()}}.
 }
 \description{
-Serialize metadata to a JSON string
+Round-trips column types, primary key, and the structural constraints
+(\code{equality}, \code{inequality}, \code{fixed_combinations}). \code{custom_constraint} cannot
+be serialized — it holds an R closure — and is dropped with a warning.
 }
 \examples{
-meta <- metadata() |> set_column_type("age", "numerical")
+meta <- metadata() |>
+  set_column_type("a", "numerical") |>
+  set_column_type("b", "numerical") |>
+  add_constraint(inequality_constraint("a", "b", type = "lt"))
 json <- metadata_to_json(meta)
 meta2 <- metadata_from_json(json)
 }

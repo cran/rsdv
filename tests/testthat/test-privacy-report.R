@@ -35,3 +35,13 @@ test_that("autoplot.rsdv_privacy_report() returns a ggplot", {
   p     <- ggplot2::autoplot(pr)
   expect_s3_class(p, "gg")
 })
+
+test_that("privacy_report() errors when only one of sensitive_col/known_cols is supplied", {
+  real <- data.frame(age = rnorm(50), income = sample(c("low","high"), 50, TRUE),
+                     stringsAsFactors = FALSE)
+  syn  <- real[sample.int(50), ]
+  expect_error(privacy_report(real, syn, sensitive_col = "income"),
+               "must be supplied together")
+  expect_error(privacy_report(real, syn, known_cols = "age"),
+               "must be supplied together")
+})

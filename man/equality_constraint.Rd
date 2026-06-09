@@ -4,17 +4,25 @@
 \alias{equality_constraint}
 \title{Constraint: two columns must be equal row-wise}
 \usage{
-equality_constraint(col_a, col_b)
+equality_constraint(col_a, col_b, tolerance = 0)
 }
 \arguments{
 \item{col_a, col_b}{Column names (character).}
+
+\item{tolerance}{Numeric. When non-zero, numeric columns compare with
+\code{abs(a - b) <= tolerance} instead of exact \code{==}. Ignored for
+non-numeric columns. Default \code{0} (exact equality).}
 }
 \value{
 An \code{rsdv_constraint} object.
 }
 \description{
-Constraint: two columns must be equal row-wise
+For continuous numerical columns, exact \code{==} is almost never satisfied by
+the copula sampler; use the \code{tolerance} argument or
+\code{\link[=inequality_constraint]{inequality_constraint()}} with a narrow band. With \code{tolerance > 0}, equality
+is \code{abs(a - b) <= tolerance} for numeric columns and exact \code{==} otherwise.
 }
 \examples{
 equality_constraint("city", "city_copy")
+equality_constraint("price_left", "price_right", tolerance = 1e-6)
 }

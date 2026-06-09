@@ -119,3 +119,42 @@ test_that("synthesizer preserves numeric<->categorical dependence", {
   # The group separation must survive (independent sampling would give ~0 gap).
   expect_gt(syn_gap, 0.5 * real_gap)
 })
+
+test_that("fit() errors clearly when a modeled column is entirely NA", {
+  df <- data.frame(x = c(1, 2, 3, 4, 5),
+                   y = as.numeric(rep(NA, 5)))  # all-NA column
+  meta <- metadata(df)
+  syn  <- gaussian_copula_synthesizer(meta)
+  expect_error(fit(syn, df), "entirely NA")
+})
+
+test_that("fit() errors clearly when no row is complete across modeled columns", {
+  # Each row missing at least one of x or y — zero complete cases.
+  df <- data.frame(x = c(1, NA, 3, NA, 5),
+                   y = c(NA, 2, NA, 4, NA))
+  meta <- metadata(df)
+  syn  <- gaussian_copula_synthesizer(meta)
+  expect_error(fit(syn, df), "complete case")
+})
+
+test_that("gaussian_copula_synthesizer() rejects unknown numerical_distributions names", {
+  meta <- metadata() |>
+    set_column_type("x", "numerical") |>
+    set_column_type("y", "numerical")
+  expect_error(
+    gaussian_copula_synthesizer(
+      meta,
+      numerical_distributions = list(typo_col = "gamma")
+    ),
+    "are not numerical columns"
+  )
+})
+
+test_that("gaussian_copula_synthesizer() rejects unnamed numerical_distributions", {
+  meta <- metadata() |> set_column_type("x", "numerical")
+  expect_error(
+    gaussian_copula_synthesizer(meta,
+                                numerical_distributions = list("gamma")),
+    "fully-named"
+  )
+})

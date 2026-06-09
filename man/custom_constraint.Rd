@@ -4,18 +4,28 @@
 \alias{custom_constraint}
 \title{Constraint: arbitrary row-wise predicate}
 \usage{
-custom_constraint(fn)
+custom_constraint(fn, vectorized = FALSE)
 }
 \arguments{
-\item{fn}{A function \code{f(row)} accepting a one-row data frame, returning
-a single logical.}
+\item{fn}{A predicate function. If \code{vectorized = FALSE}, signature is
+\code{f(row)} returning a single logical. If \code{vectorized = TRUE}, signature
+is \code{f(data)} returning a logical vector of length \code{nrow(data)}.}
+
+\item{vectorized}{Logical. See above. Default \code{FALSE}.}
 }
 \value{
 An \code{rsdv_constraint} object.
 }
 \description{
-Constraint: arbitrary row-wise predicate
+With \code{vectorized = FALSE} (default) \code{fn} is invoked once per row with a
+one-row data frame and must return a single logical — easy to write but
+slow on large frames. With \code{vectorized = TRUE} \code{fn} is invoked \strong{once}
+with the full data frame and must return a logical vector of length
+\code{nrow(data)}; use this when your predicate is vectorisable for substantial
+speedups on large synthetic samples.
 }
 \examples{
 custom_constraint(function(row) row$x > 0)
+# Vectorised — usually much faster:
+custom_constraint(function(data) data$x > 0, vectorized = TRUE)
 }

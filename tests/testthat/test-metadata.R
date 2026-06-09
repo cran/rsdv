@@ -39,3 +39,14 @@ test_that("print.rsdv_metadata() produces output without error", {
   expect_output(print(meta), "rsdv Metadata")
   expect_output(print(meta), "age")
 })
+
+test_that("set_primary_key() warns when the column type is not 'id'", {
+  meta <- metadata() |> set_column_type("age", "numerical")
+  expect_warning(set_primary_key(meta, "age"),
+                 "type 'numerical', not 'id'")
+})
+
+test_that("set_primary_key() does not warn for an 'id'-typed column", {
+  meta <- metadata() |> set_column_type("id", "id")
+  expect_no_warning(set_primary_key(meta, "id"))
+})

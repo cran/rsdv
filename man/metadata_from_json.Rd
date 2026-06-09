@@ -10,12 +10,16 @@ metadata_from_json(json)
 \item{json}{A JSON character string produced by \code{\link[=metadata_to_json]{metadata_to_json()}}.}
 }
 \value{
-An \code{rsdv_metadata} object.
+An \code{rsdv_metadata} object. Constraints are reconstructed with their
+original S3 classes so \code{\link[=check_constraint]{check_constraint()}} dispatches correctly.
 }
 \description{
 Deserialize metadata from a JSON string
 }
 \examples{
-json <- metadata_to_json(metadata() |> set_column_type("age", "numerical"))
-metadata_from_json(json)
+meta <- metadata() |>
+  set_column_type("a", "numerical") |>
+  set_column_type("b", "numerical") |>
+  add_constraint(inequality_constraint("a", "b", type = "lt"))
+metadata_from_json(metadata_to_json(meta))
 }

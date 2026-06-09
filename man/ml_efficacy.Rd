@@ -4,7 +4,14 @@
 \alias{ml_efficacy}
 \title{ML efficacy: train-on-synthetic / test-on-real accuracy ratio (TSTR)}
 \usage{
-ml_efficacy(real, synthetic, meta, target_col, test_fraction = 0.2)
+ml_efficacy(
+  real,
+  synthetic,
+  meta,
+  target_col,
+  test_fraction = 0.2,
+  seed = NULL
+)
 }
 \arguments{
 \item{real}{A data frame of real data.}
@@ -15,7 +22,11 @@ ml_efficacy(real, synthetic, meta, target_col, test_fraction = 0.2)
 
 \item{target_col}{Name of a categorical column to use as the outcome.}
 
-\item{test_fraction}{Fraction of \code{real} to hold out as the test set.}
+\item{test_fraction}{Fraction of \code{real} to hold out as the test set. Must be
+strictly between 0 and 1.}
+
+\item{seed}{Optional integer seed. When supplied, the train/test split is
+reproducible across calls without affecting the caller's RNG stream.}
 }
 \value{
 A list with elements \code{tstr} (accuracy), \code{trtr} (accuracy), and
@@ -32,6 +43,6 @@ real data for this prediction task.
 meta      <- metadata(adult_income)
 syn       <- gaussian_copula_synthesizer(meta) |> fit(adult_income)
 synth_data <- sample(syn, n = 500)
-ml_efficacy(adult_income, synth_data, meta, target_col = "income")
+ml_efficacy(adult_income, synth_data, meta, target_col = "income", seed = 1)
 }
 }

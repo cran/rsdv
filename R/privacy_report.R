@@ -17,6 +17,12 @@
 #' }
 privacy_report <- function(real, synthetic,
                             sensitive_col = NULL, known_cols = NULL) {
+  # Either both arguments are supplied (and disclosure risk is computed) or
+  # neither is (and only nndr is reported). Supplying only one is almost
+  # certainly a mistake — refuse it explicitly rather than silently skipping.
+  if (xor(is.null(sensitive_col), is.null(known_cols)))
+    stop("`sensitive_col` and `known_cols` must be supplied together (or both omitted).")
+
   nndr_sc <- nndr(real, synthetic)
 
   disclosure <- if (!is.null(sensitive_col) && !is.null(known_cols)) {
